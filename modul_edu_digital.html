@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modul Kompetensi Digital Guru Islam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --app-height: 100vh;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport for modern mobile browsers */
+            overflow: hidden; /* STRICTLY NO SCROLL */
+            background-color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        
+        /* Device Mockup Container */
+        .app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Desktop specific styling to make it look like a phone */
+        @media (min-width: 481px) {
+            body {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-image: radial-gradient(circle at center, #0f766e 0%, #042f2e 100%);
+            }
+            .app-container {
+                height: 850px;
+                max-height: 95vh;
+                border-radius: 2.5rem;
+                border: 12px solid #1e293b;
+            }
+        }
+
+        /* Slide Transitions */
+        .slide {
+            position: absolute;
+            top: 60px; /* Below header */
+            bottom: 80px; /* Above footer */
+            left: 0;
+            right: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(20px);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            overflow: hidden; /* Ensure content inside slide doesn't scroll */
+        }
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        .slide.exiting-left {
+            transform: translateX(-20px);
+        }
+
+        /* Custom Toggle Pill Design */
+        .toggle-pill {
+            transition: all 0.2s ease;
+        }
+        .toggle-pill.active {
+            background-color: #ecfdf5; /* emerald-50 */
+            border-color: #10b981; /* emerald-500 */
+            color: #065f46; /* emerald-800 */
+        }
+        .toggle-pill .check-icon {
+            filter: grayscale(1) opacity(0.3);
+            transition: all 0.2s;
+        }
+        .toggle-pill.active .check-icon {
+            filter: grayscale(0) opacity(1);
+            transform: scale(1.1);
+        }
+
+        /* Compact Table for Roadmap */
+        .compact-table {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .compact-row {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- HEADER -->
+        <header class="h-[60px] bg-emerald-700 text-white flex flex-col justify-center px-4 relative z-10 shadow-md shrink-0">
+            <div class="flex justify-between items-center w-full">
+                <div class="text-xs font-medium uppercase tracking-wider opacity-80" id="header-subtitle">Modul Digital</div>
+                <div class="text-xs font-bold bg-white/20 px-2 py-1 rounded-full" id="header-counter">1/13</div>
+            </div>
+            <div class="text-base font-bold truncate" id="header-title">Roadmap Kurikulum</div>
+            
+            <!-- Progress Bar -->
+            <div class="absolute bottom-0 left-0 h-1 bg-emerald-900 w-full">
+                <div id="progress-bar" class="h-full bg-yellow-400 transition-all duration-500 w-0"></div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA (Slides will be injected here) -->
+        <main id="slide-container" class="relative flex-1 bg-slate-50 w-full overflow-hidden">
+            <!-- Dynamic Content goes here -->
+        </main>
+
+        <!-- FOOTER CONTROLS -->
+        <footer class="h-[80px] bg-white border-t border-gray-200 flex items-center justify-between px-6 z-10 shrink-0">
+            <button onclick="app.prev()" id="btn-prev" class="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+            
+            <button onclick="app.next()" id="btn-next" class="flex-1 ml-4 h-12 rounded-2xl flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all">
+                <span id="btn-next-text">Mulai Eksplorasi</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        // Store user selections
+        const userState = {};
+
+        // Data model for all screens (strictly designed to fit without scrolling)
+        const slideData = [
+            {
+                id: 'cover',
+                type: 'cover',
+                icon: '🕌',
+                title: 'KOMPETENSI DIGITAL<br>CALON GURU ISLAM',
+                subtitle: 'Roadmap Checklist & Instrumen Implementasi Kurikulum (SPMI/OBE)',
+                target: 'Lulusan mampu menjadi Guru Islam Profesional yang memiliki kompetensi digital, AI, media pembelajaran, dan etika teknologi.'
+            },
+            {
+                id: 'tahap0',
+                title: 'Tahap 0: Persiapan Dosen',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '🛠️ Perangkat Pembelajaran',
+                        items: ['CPL dipahami', 'CPMK disusun', 'RPS selesai', 'Modul tersedia', 'Rubrik Penilaian', 'Bahan Presentasi', 'Video Tutorial', 'LMS siap']
+                    },
+                    {
+                        title: '👨‍🏫 Kompetensi Dosen',
+                        items: ['Google Workspace', 'Microsoft Office', 'Canva Dasar', 'Manajemen LMS', 'AI Dasar', 'Etika AI', 'Penjaminan Mutu']
+                    }
+                ]
+            },
+            {
+                id: 'tahap1-2',
+                title: 'T1 Orientasi & T2 Fundamental',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '📍 T1: Orientasi Mahasiswa',
+                        items: ['Kontrak Kuliah', 'Penjelasan CPL', 'Penjelasan CPMK', 'Penjelasan Project', 'Penjelasan Portfolio', 'Penjelasan AI Ethics']
+                    },
+                    {
+                        title: '💻 T2: Fundamental Digital',
+                        items: ['Hardware Dasar', 'Software & OS', 'Manajemen Folder', 'Cloud Storage', 'Email Profesional', '📂 Folder Digital (Project)']
+                    }
+                ]
+            },
+            {
+                id: 'tahap3',
+                title: 'Tahap 3: Digital Productivity',
+                type: 'checklist-grouped',
+                icon: '📄',
+                blocks: [
+                    { title: 'Word', items: ['Surat', 'Proposal', 'Modul', 'Makalah'] },
+                    { title: 'Excel', items: ['Tabel', 'Rumus Dasar', 'Nilai', 'Absensi'] },
+                    { title: 'PowerPoint', items: ['Slide', 'Template', 'Presentasi'] }
+                ],
+                output: 'Output: Administrasi Guru Profesional'
+            },
+            {
+                id: 'tahap4-5',
+                title: 'T4 Multimedia & T5 Ethics',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '🎥 T4: Multimedia Edukasi',
+                        items: ['Desain Canva', 'Membuat Poster', 'Infografis Materi', 'Editing Video', 'Editing Audio', 'Output: Media Pembelajaran']
+                    },
+                    {
+                        title: '🛡️ T5: Digital Ethics',
+                        items: ['Navigasi Internet', 'Mesin Pencari', 'Digital Literacy', 'Cyber Security', 'Manajemen Password', 'Identifikasi Hoaks', 'Hak Cipta']
+                    }
+                ]
+            },
+            {
+                id: 'tahap6-7',
+                title: 'T6 LMS & T7 Artificial Intelligence',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '🖥️ T6: Manajemen LMS',
+                        items: ['Google Classroom', 'Platform Moodle', 'Google Form', 'Quizizz', 'Kahoot', 'Project: Mini Kelas Digital']
+                    },
+                    {
+                        title: '🤖 T7: AI Education',
+                        items: ['Prompt Dasar', 'AI untuk Guru', 'AI untuk Soal', 'AI untuk RPP', 'AI Presentasi', 'Verifikasi AI', 'Etika AI']
+                    }
+                ]
+            },
+            {
+                id: 'tahap8-9',
+                title: 'T8 Website & T9 Kolaborasi',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '🌐 T8: Website Pendidikan',
+                        items: ['HTML Dasar', 'Sistem CMS', 'Blog Guru', 'Website Portfolio', 'Output: Website Guru']
+                    },
+                    {
+                        title: '👥 T9: Kolaborasi Digital',
+                        items: ['Google Drive', 'Google Docs', 'Google Spreadsheet', 'Google Slides', 'Output: Project Kelompok']
+                    }
+                ]
+            },
+            {
+                id: 'tahap10-11',
+                title: 'T10 Portfolio & T11 Presentasi',
+                type: 'checklist-split',
+                blocks: [
+                    {
+                        title: '📂 T10: Digital Portfolio',
+                        items: ['CV Digital', 'Modul Ajar', 'Administrasi', 'Presentasi', 'Canva Media', 'Video Edukasi', 'AI Project', 'Website', 'Refleksi']
+                    },
+                    {
+                        title: '🎤 T11: Presentasi',
+                        items: ['Presentasi Karya', 'Demonstrasi Alat', 'Tanya Jawab', 'Peer Review']
+                    }
+                ]
+            },
+            {
+                id: 'tahap12',
+                title: 'Tahap 12: Evaluasi Akhir',
+                type: 'evaluation',
+                icon: '📊',
+                blocks: [
+                    { title: 'Sikap', color: 'emerald', items: ['Disiplin', 'Amanah', 'Kejujuran', 'Etika Digital'] },
+                    { title: 'Pengetahuan', color: 'blue', items: ['Fundamental', 'Office', 'Multimedia', 'AI', 'LMS'] },
+                    { title: 'Keterampilan', color: 'purple', items: ['Praktik', 'Project', 'Presentasi', 'Portfolio'] }
+                ]
+            },
+            {
+                id: 'roadmap-mhs',
+                title: 'Roadmap Mahasiswa',
+                type: 'visual-path',
+                icon: '🛤️',
+                items: [
+                    'Orientasi', 'Fundamental', 'MS Office', 'G-Workspace', 
+                    'Canva', 'Multimedia', 'Cyber Ethics', 'LMS', 
+                    'Art. Intel', 'Website', 'Kolaborasi', 'Portfolio', 
+                    'Presentasi', 'Kompeten 🎯'
+                ]
+            },
+            {
+                id: 'indikator',
+                title: 'Indikator Kelulusan',
+                type: 'indicator',
+                icon: '🎯',
+                blocks: [
+                    { title: 'Sikap', items: ['Beretika dlm teknologi', 'Integritas akademik', 'Tanggung jawab AI'] },
+                    { title: 'Pengetahuan', items: ['Konsep dasar komputer', 'Teknologi pembelajaran', 'AI & literasi digital'] },
+                    { title: 'Keterampilan', items: ['Media pembelajaran', 'Mengelola LMS', 'Pemanfaatan AI etis', 'Portofolio digital'] }
+                ]
+            },
+            {
+                id: 'roadmap-4th',
+                title: 'Roadmap Kompetensi (4 Tahun)',
+                type: 'compact-table',
+                icon: '📅',
+                headers: ['Smt', 'Fokus Utama', 'Target Capaian'],
+                rows: [
+                    ['1', 'Literasi Digital', 'Komputer, Office, Internet, Etika'],
+                    ['2', 'Multimedia Pend.', 'Canva, Video, Audio, Presentasi'],
+                    ['3', 'Teknologi Pend.', 'LMS, Kuis Digital, Kolaborasi'],
+                    ['4', 'AI Pendidikan', 'Prompt, AI Teaching Assistant'],
+                    ['5', 'Website Pend.', 'Blog, CMS, Portofolio Guru'],
+                    ['6', 'Microteaching', 'Praktik mengajar berbasis teknologi'],
+                    ['7', 'PPL / Magang', 'Implementasi di sekolah/madrasah'],
+                    ['8', 'Tugas Akhir', 'Portofolio Digital & Inovasi']
+                ]
+            },
+            {
+                id: 'target',
+                title: 'Target Profil Lulusan',
+                type: 'checklist-final',
+                icon: '🏆',
+                items: [
+                    'Guru Islam profesional melek digital.',
+                    'Mampu merancang pembelajaran berbasis IT.',
+                    'Menghasilkan media interaktif & kreatif.',
+                    'Mengelola kelas digital melalui LMS.',
+                    'Menggunakan AI etis & bertanggung jawab.',
+                    'Memiliki portofolio digital komprehensif.',
+                    'Siap hadapi transformasi pendidikan Islam.'
+                ]
+            }
+        ];
+
+        const app = {
+            currentIndex: 0,
+            
+            init() {
+                this.renderAllSlides();
+                this.updateUI();
+                
+                // Add keyboard navigation for desktop testing
+                document.addEventListener('keydown', (e) => {
+                    if(e.key === 'ArrowRight') this.next();
+                    if(e.key === 'ArrowLeft') this.prev();
+                });
+            },
+
+            // Generate HTML for all slides once to ensure smooth, no-scroll transitions
+            renderAllSlides() {
+                const container = document.getElementById('slide-container');
+                let html = '';
+
+                slideData.forEach((slide, index) => {
+                    html += `<div id="slide-${index}" class="slide ${index === 0 ? 'active' : ''}">`;
+                    
+                    // Route to specific renderer based on slide type
+                    if (slide.type === 'cover') html += this.renderCover(slide);
+                    else if (slide.type === 'checklist-split') html += this.renderChecklistSplit(slide, index);
+                    else if (slide.type === 'checklist-grouped') html += this.renderChecklistGrouped(slide, index);
+                    else if (slide.type === 'evaluation') html += this.renderEvaluation(slide, index);
+                    else if (slide.type === 'visual-path') html += this.renderVisualPath(slide);
+                    else if (slide.type === 'indicator') html += this.renderIndicator(slide, index);
+                    else if (slide.type === 'compact-table') html += this.renderTable(slide);
+                    else if (slide.type === 'checklist-final') html += this.renderFinalChecklist(slide, index);
+                    
+                    html += `</div>`;
+                });
+
+                container.innerHTML = html;
+            },
+
+            // --- Component Renderers --- //
+
+            renderCover(data) {
+                return `
+                    <div class="flex-1 flex flex-col items-center justify-center text-center px-4">
+                        <div class="text-7xl mb-6 bg-emerald-100 p-6 rounded-full shadow-inner border border-emerald-200">${data.icon}</div>
+                        <h1 class="text-2xl font-bold text-gray-800 leading-tight mb-4">${data.title}</h1>
+                        <p class="text-sm text-gray-600 mb-8 max-w-xs">${data.subtitle}</p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-xs text-yellow-800 text-left font-medium shadow-sm">
+                            <span class="font-bold text-yellow-600 block mb-1">🎯 Target Akhir:</span>
+                            ${data.target}
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderChecklistSplit(data, slideIdx) {
+                let html = `<div class="flex-1 flex flex-col gap-3 h-full overflow-hidden">`;
+                data.blocks.forEach((block, bIdx) => {
+                    html += `
+                        <div class="bg-white border border-gray-200 rounded-xl p-3 flex-1 flex flex-col shadow-sm">
+                            <h2 class="text-sm font-bold text-emerald-700 mb-2 border-b border-gray-100 pb-1 shrink-0">${block.title}</h2>
+                            <div class="grid grid-cols-2 gap-2 overflow-hidden flex-1 content-start">
+                                ${block.items.map((item, iIdx) => this.generateToggleBtn(item, `${slideIdx}-${bIdx}-${iIdx}`)).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                return html;
+            },
+
+            renderChecklistGrouped(data, slideIdx) {
+                let html = `
+                    <div class="flex flex-col h-full bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
+                        <div class="text-center text-3xl mb-2">${data.icon}</div>
+                        <div class="flex-1 flex flex-col gap-3 justify-center">
+                `;
+                data.blocks.forEach((block, bIdx) => {
+                    html += `
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 px-1">${block.title}</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${block.items.map((item, iIdx) => this.generateSmallToggle(item, `${slideIdx}-${bIdx}-${iIdx}`)).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `
+                        </div>
+                        <div class="shrink-0 mt-3 bg-emerald-50 text-emerald-700 text-xs font-bold text-center p-2 rounded-lg border border-emerald-100">
+                            ✅ ${data.output}
+                        </div>
+                    </div>
+                `;
+                return html;
+            },
+
+            renderEvaluation(data, slideIdx) {
+                let html = `
+                    <div class="flex-1 flex flex-col justify-between h-full bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
+                        <div class="text-center text-3xl mb-2 shrink-0">${data.icon}</div>
+                        <div class="flex-1 flex flex-col gap-2">
+                `;
+                data.blocks.forEach((block, bIdx) => {
+                    const bgClass = block.color === 'emerald' ? 'bg-emerald-50 border-emerald-200' : (block.color === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200');
+                    const textClass = block.color === 'emerald' ? 'text-emerald-700' : (block.color === 'blue' ? 'text-blue-700' : 'text-purple-700');
+                    
+                    html += `
+                        <div class="flex-1 border rounded-lg ${bgClass} p-2 flex flex-col">
+                            <h3 class="text-xs font-bold ${textClass} uppercase mb-1.5 shrink-0 border-b border-black/10 pb-1">${block.title}</h3>
+                            <div class="flex flex-wrap gap-1 content-start">
+                                ${block.items.map((item, iIdx) => this.generateMiniToggle(item, `${slideIdx}-${bIdx}-${iIdx}`)).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+                return html;
+            },
+
+            renderVisualPath(data) {
+                let html = `
+                    <div class="flex-1 bg-white rounded-xl border border-gray-200 p-3 shadow-sm flex flex-col">
+                        <div class="text-center text-3xl mb-3 shrink-0">${data.icon}</div>
+                        <div class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-2 content-center">
+                `;
+                data.items.forEach((item, idx) => {
+                    const isLast = idx === data.items.length - 1;
+                    html += `
+                        <div class="flex items-center gap-2 p-1.5 border border-gray-100 rounded-lg bg-gray-50 text-xs font-medium ${isLast ? 'bg-yellow-50 border-yellow-300 text-yellow-800 col-span-2 md:col-span-1 justify-center' : 'text-gray-600'}">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold shrink-0">${idx + 1}</div>
+                            <span class="truncate">${item}</span>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+                return html;
+            },
+
+            renderIndicator(data, slideIdx) {
+                let html = `
+                    <div class="flex-1 flex flex-col gap-2 h-full">
+                        <div class="text-center text-3xl shrink-0">${data.icon}</div>
+                `;
+                data.blocks.forEach((block, bIdx) => {
+                    html += `
+                        <div class="flex-1 bg-white border border-gray-200 rounded-xl p-3 flex flex-col shadow-sm">
+                            <h3 class="text-xs font-bold text-emerald-700 uppercase mb-2 border-b border-emerald-100 pb-1 shrink-0">${block.title}</h3>
+                            <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
+                                ${block.items.map((item, iIdx) => `
+                                    <label class="flex items-start gap-2 cursor-pointer group" onclick="app.toggleState('ind-${slideIdx}-${bIdx}-${iIdx}')">
+                                        <input type="checkbox" id="ind-${slideIdx}-${bIdx}-${iIdx}" class="mt-0.5 accent-emerald-500 w-4 h-4 rounded border-gray-300 pointer-events-none">
+                                        <span class="text-xs text-gray-700 leading-tight group-hover:text-emerald-700 transition-colors">${item}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                return html;
+            },
+
+            renderTable(data) {
+                let html = `
+                    <div class="flex-1 bg-white rounded-xl border border-gray-200 p-2 shadow-sm flex flex-col overflow-hidden">
+                        <div class="text-center text-3xl mb-2 shrink-0">${data.icon}</div>
+                        <div class="compact-table flex-1 justify-between">
+                            <div class="flex font-bold text-[10px] text-gray-500 uppercase px-2 mb-1 border-b border-gray-200 pb-1 shrink-0">
+                                <div class="w-8 text-center">${data.headers[0]}</div>
+                                <div class="w-24 px-1">${data.headers[1]}</div>
+                                <div class="flex-1 px-1">${data.headers[2]}</div>
+                            </div>
+                `;
+                data.rows.forEach(row => {
+                    html += `
+                        <div class="compact-row">
+                            <div class="w-8 text-center font-bold text-emerald-600 text-xs">${row[0]}</div>
+                            <div class="w-24 px-1 font-semibold text-gray-700 leading-tight">${row[1]}</div>
+                            <div class="flex-1 px-1 text-gray-500 leading-tight">${row[2]}</div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+                return html;
+            },
+
+            renderFinalChecklist(data, slideIdx) {
+                let html = `
+                    <div class="flex-1 flex flex-col bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                        <div class="text-center text-4xl mb-4 shrink-0 animate-bounce">${data.icon}</div>
+                        <div class="flex-1 flex flex-col justify-center gap-2.5">
+                            ${data.items.map((item, iIdx) => `
+                                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer group" onclick="app.toggleState('final-${iIdx}')">
+                                    <div class="w-6 h-6 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0" id="icon-final-${iIdx}">
+                                        <div class="w-3 h-3 bg-emerald-500 rounded-full opacity-0 transition-opacity"></div>
+                                    </div>
+                                    <span class="text-xs md:text-sm font-medium text-gray-700 leading-tight group-hover:text-emerald-800">${item}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                return html;
+            },
+
+            // Generates standard pill toggle
+            generateToggleBtn(text, id) {
+                return `
+                    <div id="btn-${id}" class="toggle-pill cursor-pointer border border-gray-200 bg-gray-50 rounded-lg p-1.5 md:p-2 text-[11px] md:text-xs font-medium flex items-center gap-1.5 select-none hover:border-emerald-300" onclick="app.toggleBtn('${id}')">
+                        <span class="check-icon text-sm leading-none shrink-0">✅</span>
+                        <span class="leading-tight truncate">${text}</span>
+                    </div>
+                `;
+            },
+            
+            // Generates smaller inline pill toggle
+            generateSmallToggle(text, id) {
+                return `
+                    <div id="btn-${id}" class="toggle-pill cursor-pointer border border-gray-200 bg-gray-50 rounded-md px-1.5 py-1 text-[10px] font-medium flex items-center gap-1 select-none hover:border-emerald-300" onclick="app.toggleBtn('${id}')">
+                        <span class="check-icon text-xs leading-none shrink-0">✅</span>
+                        <span class="leading-tight">${text}</span>
+                    </div>
+                `;
+            },
+
+            // Generates minimal pill for evaluation
+            generateMiniToggle(text, id) {
+                return `
+                    <div id="btn-${id}" class="toggle-pill cursor-pointer border border-white/50 bg-white/50 rounded px-1.5 py-0.5 text-[10px] font-medium flex items-center gap-1 select-none shadow-sm hover:shadow-md transition-shadow" onclick="app.toggleBtn('${id}')">
+                        <span class="check-icon text-[10px] leading-none shrink-0">✅</span>
+                        <span class="leading-tight">${text}</span>
+                    </div>
+                `;
+            },
+
+            toggleBtn(id) {
+                const el = document.getElementById(`btn-${id}`);
+                userState[id] = !userState[id];
+                if (userState[id]) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            },
+
+            toggleState(id) {
+                const input = document.getElementById(id);
+                if(input) {
+                    input.checked = !input.checked;
+                } else if(id.startsWith('final-')) {
+                    // Custom logic for final animated radio-like checks
+                    const icon = document.getElementById(`icon-${id}`).querySelector('div');
+                    userState[id] = !userState[id];
+                    icon.style.opacity = userState[id] ? '1' : '0';
+                }
+            },
+
+            updateUI() {
+                const total = slideData.length;
+                
+                // Update Progress
+                const progressPct = ((this.currentIndex + 1) / total) * 100;
+                document.getElementById('progress-bar').style.width = `${progressPct}%`;
+                
+                // Update Header
+                const currentData = slideData[this.currentIndex];
+                document.getElementById('header-counter').innerText = `${this.currentIndex + 1}/${total}`;
+                
+                if (this.currentIndex === 0) {
+                    document.getElementById('header-title').innerText = "Modul Interaktif";
+                    document.getElementById('header-subtitle').innerText = "Selamat Datang";
+                } else {
+                    document.getElementById('header-title').innerText = currentData.title.split('<br>')[0];
+                    let subtitleText = currentData.id.includes('tahap') ? 'Materi Pembelajaran' : 'Dokumen SPMI / OBE';
+                    document.getElementById('header-subtitle').innerText = subtitleText;
+                }
+
+                // Update Buttons
+                const btnPrev = document.getElementById('btn-prev');
+                const btnNext = document.getElementById('btn-next');
+                const btnNextText = document.getElementById('btn-next-text');
+
+                btnPrev.disabled = this.currentIndex === 0;
+                
+                if (this.currentIndex === total - 1) {
+                    btnNextText.innerText = "Selesai";
+                    btnNext.classList.replace('bg-emerald-600', 'bg-yellow-500');
+                    btnNext.classList.replace('shadow-emerald-600/30', 'shadow-yellow-500/30');
+                    btnNext.classList.replace('hover:bg-emerald-700', 'hover:bg-yellow-600');
+                } else {
+                    btnNextText.innerText = this.currentIndex === 0 ? "Mulai Eksplorasi" : "Selanjutnya";
+                    btnNext.classList.replace('bg-yellow-500', 'bg-emerald-600');
+                    btnNext.classList.replace('shadow-yellow-500/30', 'shadow-emerald-600/30');
+                    btnNext.classList.replace('hover:bg-yellow-600', 'hover:bg-emerald-700');
+                }
+            },
+
+            next() {
+                if (this.currentIndex < slideData.length - 1) {
+                    const currentSlide = document.getElementById(`slide-${this.currentIndex}`);
+                    currentSlide.classList.remove('active');
+                    currentSlide.classList.add('exiting-left');
+                    
+                    this.currentIndex++;
+                    
+                    const nextSlide = document.getElementById(`slide-${this.currentIndex}`);
+                    nextSlide.classList.remove('exiting-left'); // Ensure it comes from right
+                    // Small delay to allow CSS class removal to register
+                    setTimeout(() => {
+                        nextSlide.classList.add('active');
+                    }, 10);
+                    
+                    this.updateUI();
+                } else {
+                    // Reached end, loop back or show finish state. Here we loop for demo.
+                    alert("✅ Selamat! Anda telah menyelesaikan seluruh Roadmap Implementasi Kompetensi Digital.");
+                    this.goToStart();
+                }
+            },
+
+            prev() {
+                if (this.currentIndex > 0) {
+                    const currentSlide = document.getElementById(`slide-${this.currentIndex}`);
+                    currentSlide.classList.remove('active');
+                    // Reset transform to right for future entry
+                    setTimeout(() => currentSlide.classList.remove('exiting-left'), 300);
+                    
+                    this.currentIndex--;
+                    
+                    const prevSlide = document.getElementById(`slide-${this.currentIndex}`);
+                    prevSlide.classList.remove('exiting-left');
+                    prevSlide.classList.add('active');
+                    
+                    this.updateUI();
+                }
+            },
+
+            goToStart() {
+                document.getElementById(`slide-${this.currentIndex}`).classList.remove('active');
+                this.currentIndex = 0;
+                document.getElementById(`slide-0`).classList.add('active');
+                this.updateUI();
+            }
+        };
+
+        // Start Application when DOM is fully loaded
+        window.onload = function() {
+            app.init();
+        };
+    </script>
+</body>
+</html>
